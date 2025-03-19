@@ -116,12 +116,12 @@ class word2vec:
     
     def save_embeddings(self, f_name="embeddings.json"):
         embeddings_list = {word: embedding.tolist() for word, embedding in self.word_to_embedding.items()}
-        with open(f_name, "w") as f:
+        with open("../src_data/"+f_name, "w") as f:
             json.dump(embeddings_list, f, indent=4)
         print("Embeddings saved successfully!")
     
     def load_embeddings(self, f_name):
-        with open(f_name) as f:
+        with open("../src_data/"+f_name) as f:
             embedding_list = json.loads(f.read())
         self.word_to_embedding = {word: np.array(embedding) for word, embedding in embedding_list.items()}
         self.unique_words = np.array(list(self.word_to_embedding.keys()))
