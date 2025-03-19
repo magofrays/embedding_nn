@@ -5,12 +5,13 @@ from process_data import clean_word
 import json
 
 class SimpleNN:
-    def __init__(self):
+    def __init__(self, context_len = 6):
         self.nn_model = Sequential()
         self.train_data = ()
         self.data = np.array([])
         self.unique_words = np.array([])
         self.subsample_size = 7000
+        self.context_len = context_len
     
     def index_to_one_hot(self, index, length):
         one_hot = np.zeros(length)
@@ -22,8 +23,8 @@ class SimpleNN:
     
     def make_train_data(self, start, end):
         splits = []
-        for i in range(start, end-self.context_len-1):
-            splits.append(self.data[i:i+self.context_len+1])
+        for i in range(start, end - self.context_len - 1):
+            splits.append(self.data[i : i + self.context_len + 1])
         splits = np.array(splits)
         X_train = np.array([self.convert_input_to_embedding(s[:-1]) for s in splits])
         Y_train = np.array([self.index_to_one_hot(self.unique_words.tolist().index(s[-1]), len(self.unique_words)) for s in splits])
@@ -58,6 +59,9 @@ class SimpleNN:
         self.word_to_embedding = {word: np.array(embedding) for word, embedding in embedding_list.items()}
         self.unique_words = np.array(list(self.word_to_embedding.keys()))
         print("Embeddings loaded successfully!")
+
+    def convert_input_to_embedding(self, input):
+        return np.array([self.word_to_embedding[str(i)] for i in input])
 
 
 def generate_text(context, model, size):
