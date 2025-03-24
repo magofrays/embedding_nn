@@ -11,6 +11,7 @@ class word2vec:
         self.word_to_embedding = {}
         self.data = np.array([])
         self.count_to_words = {}
+        self.word_to_count = {}
         self.unique_words = np.array([])
         
         self.subsample_size = 5000
@@ -26,6 +27,7 @@ class word2vec:
         self.data = np.concatenate((self.data, new_data))
         if(count_words):
             self.count_words_data()
+            self.word_count_data()
 
     def count_words_data(self):
         word_counts = Counter(self.data)
@@ -34,6 +36,19 @@ class word2vec:
             if count not in self.count_to_words:
                 self.count_to_words[count] = set()
             self.count_to_words[count].add(word)
+
+    def word_count_data(self):
+        for i in range(len(self.data)):
+            for j in range(1, self.context_len + 1):
+                if i + j < len(self.data):
+                    val = ''
+                    for m in range(j):
+                        val += str(self.data[i + m]) + ' '
+                    val = val[:-1]
+                    if val in self.word_to_count:
+                        self.word_to_count[val] += 1
+                    else:
+                        self.word_to_count[val] = 1
         
     def find_neg_context(self, idx, pos_context):
         word = self.data[idx]
@@ -118,11 +133,19 @@ class word2vec:
         embeddings_list = {word: embedding.tolist() for word, embedding in self.word_to_embedding.items()}
         with open("../src_data/"+f_name, "w") as f:
             json.dump(embeddings_list, f, indent=4)
+        f.close()
+        print("Embeddings saved successfully!")
+
+    def save_word_count(self, f_name="word_count.json"):
+        with open("../src_data/"+f_name, "w") as f:
+            json.dump(self.word_to_count, f, indent=4)
+        f.close()
         print("Embeddings saved successfully!")
     
     def load_embeddings(self, f_name):
         with open("../src_data/"+f_name) as f:
             embedding_list = json.loads(f.read())
+        f.close()
         self.word_to_embedding = {word: np.array(embedding) for word, embedding in embedding_list.items()}
         self.unique_words = np.array(list(self.word_to_embedding.keys()))
         print("Embeddings loaded successfully!")

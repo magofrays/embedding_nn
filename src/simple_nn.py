@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import logging
+import gmpy2
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 tf.get_logger().setLevel('ERROR')
@@ -19,6 +20,7 @@ class SimpleNN:
         self.subsample_size = subsample_size
         self.context_len = context_len
         self.embedding_size = 0
+        self.count_words = {}
     
     def index_to_one_hot(self, index, length):
         one_hot = np.zeros(length)
@@ -57,6 +59,26 @@ class SimpleNN:
             self.make_train_data(i*self.subsample_size, (i+1)*self.subsample_size)
             self.nn_model.fit(self.train_data[0], self.train_data[1], epochs=epochs, batch_size=32)
         print("Training completed!")
+
+    def computing_perplexity(self, words):
+        add_sum = 0
+        for i in range(len(words), 0, -1):
+            val = ''
+            for k in range(i):
+                val += words[k] + ' '
+            val = val[:-1]
+            c_up = 1
+            if val in self.count_words:
+                c_up += self.count_words[val]
+            c_down = 1
+            if words[i] in self.count_words:
+                c_down += self.count_words[words[i]]
+            add_sum += np.log(c_up / c_down)
+        down_val = np.exp(add_sum)
+        perplexity = gmpy2.root(1 / down_val, len(words))
+        print(f"Perplexity: {perplexity}")
+
+
     
     def predict(self, str_context, verbose=0):
         cleaned_words = [clean_word(word) for word in str_context]
@@ -67,6 +89,8 @@ class SimpleNN:
         word_one_hot = self.nn_model.predict(context, verbose=verbose)
         predicted_index = np.argmax(word_one_hot, axis=-1)[0]
         predicted_word = self.unique_words[predicted_index]
+        cleaned_words.append(predicted_word)
+        self.computing_perplexity(cleaned_words)
         return predicted_word
 
     def load_embeddings(self, f_name):
@@ -76,6 +100,12 @@ class SimpleNN:
         self.unique_words = np.array(list(self.word_to_embedding.keys()))
         self.embedding_size = len(self.word_to_embedding[self.unique_words[0]])
         print("Embeddings loaded successfully!")
+
+    def load_word_count(self, f_name):
+        with open("../src_data/"+f_name) as f:
+            words = json.loads(f.read())
+        self.count_words = {words: counts for words, counts in words.items()}
+        print("Load s kaifom")
 
     def convert_input_to_embedding(self, input):
         return np.array([self.word_to_embedding[str(i)] for i in input])
