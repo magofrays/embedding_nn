@@ -1,7 +1,12 @@
 import numpy as np
+import os
+import logging
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+import tensorflow as tf
+tf.get_logger().setLevel('ERROR')
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten
-import tensorflow as tf
+
 from process_data import clean_word
 import json
 
@@ -36,6 +41,7 @@ class SimpleNN:
     def compile(self):
         self.nn_model.add(Flatten(input_shape=(self.context_len, self.embedding_size)))
         self.nn_model.add(Dense(500, activation='relu'))
+        self.nn_model.add(Dense(1000, activation='relu'))
         self.nn_model.add(Dense(len(self.unique_words), activation='softmax'))
         self.nn_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         
@@ -47,7 +53,7 @@ class SimpleNN:
             return
     
         for i in range(subsample_number):
-            print(f"Iteration {i} out of {subsample_number}")
+            print(f"Iteration {i+1} out of {subsample_number}")
             self.make_train_data(i*self.subsample_size, (i+1)*self.subsample_size)
             self.nn_model.fit(self.train_data[0], self.train_data[1], epochs=epochs, batch_size=32)
         print("Training completed!")
