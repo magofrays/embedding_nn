@@ -44,18 +44,16 @@ class BPETokenizerSimple:
 
         for i, word in enumerate(words):
             if i > 0 and not word.startswith("\n"):
-                tokens.append("Ġ" + word)  # Add 'Ġ' to words that follow a space or newline
+                tokens.append("Ġ" + word)
             else:
-                tokens.append(word)  # Handle first word or standalone '\n'
+                tokens.append(word)
 
         token_ids = []
         for token in tokens:
             if token in self.inverse_vocab:
-                # token is contained in the vocabulary as is
                 token_id = self.inverse_vocab[token]
                 token_ids.append(token_id)
             else:
-                # Attempt to handle subword tokenization via BPE
                 sub_token_ids = self.tokenize_with_bpe(token)
                 token_ids.extend(sub_token_ids)
 
@@ -77,9 +75,7 @@ class BPETokenizerSimple:
                 if pair in self.bpe_merges:
                     merged_token_id = self.bpe_merges[pair]
                     new_tokens.append(merged_token_id)
-                    # Uncomment for educational purposes:
-                    # print(f"Merged pair {pair} -> {merged_token_id} ('{self.vocab[merged_token_id]}')")
-                    i += 2  # Skip the next token as it's merged
+                    i += 2  
                     can_merge = True
                 else:
                     new_tokens.append(token_ids[i])
@@ -127,12 +123,10 @@ class BPETokenizerSimple:
                 new_id = merge['new_id']
                 self.bpe_merges[pair] = new_id
 
-    @staticmethod
     def find_freq_pair(token_ids):
         pairs = Counter(zip(token_ids, token_ids[1:]))
         return max(pairs.items(), key=lambda x: x[1])[0]
 
-    @staticmethod
     def replace_pair(token_ids, pair_id, new_id):
         dq = deque(token_ids)
         replaced = []
@@ -146,12 +140,3 @@ class BPETokenizerSimple:
                 replaced.append(current)
 
         return replaced
-
-if __name__ == "__main__":
-    text = open(sys.argv[1]).read()
-
-    bpe = BPETokenizerSimple()
-    bpe.train(text, int(sys.argv[2]))
-    bpe.save_vocab_and_merges("vocab", "merges")
-
-    print(bpe.encode(text))
