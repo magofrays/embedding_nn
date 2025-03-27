@@ -62,7 +62,7 @@ class SimpleNN:
 
     def computing_perplexity(self, words):
         add_sum = 0
-        for i in range(len(words), 0, -1):
+        for i in range(len(words) - 1, 0, -1):
             val = ''
             for k in range(i):
                 val += words[k] + ' '
@@ -99,7 +99,7 @@ class SimpleNN:
         self.word_to_embedding = {word: np.array(embedding) for word, embedding in embedding_list.items()}
         self.unique_words = np.array(list(self.word_to_embedding.keys()))
         self.embedding_size = len(self.word_to_embedding[self.unique_words[0]])
-        print("Embeddings loaded successfully!")
+        print("Embeddings loaded in NN successfully!")
 
     def load_word_count(self, f_name):
         with open("../src_data/"+f_name) as f:

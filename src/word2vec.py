@@ -13,6 +13,8 @@ class word2vec:
         self.count_to_words = {}
         self.word_to_count = {}
         self.unique_words = np.array([])
+        self.add_len = 0
+        self.old_len = 0
         
         self.subsample_size = 5000
         
@@ -23,11 +25,15 @@ class word2vec:
     def sigmoid(self, x):
         return 1/(1 + np.exp(-x))
     
-    def add_data(self, new_data, count_words = True):
+    def add_data(self, new_data, count_words = True, is_new = False):
         self.data = np.concatenate((self.data, new_data))
         if(count_words):
             self.count_words_data()
             self.word_count_data()
+        if is_new:
+            self.add_len = len(new_data)
+        else:
+            self.old_len = len(self.data)
 
     def count_words_data(self):
         word_counts = Counter(self.data)
@@ -72,8 +78,11 @@ class word2vec:
 
         return {word : self.word_to_embedding[word] for word in neg_context}
             
-    def find_pos_context(self, idx):
-        mask = [x for x in range (max(0, idx - self.context_len), min(len(self.data), idx + self.context_len))]
+    def find_pos_context(self, idx, is_new = False):
+        add_value = 0
+        if is_new:
+            add_value = self.context_len - (idx - self.old_len)
+        mask = [x for x in range (max(0, idx - self.context_len + add_value), min(len(self.data), idx + self.context_len))]
         mask.remove(idx)
         mask = np.array(mask)
         pos_context = {word: self.word_to_embedding[word] for word in self.data[mask]}
@@ -100,9 +109,9 @@ class word2vec:
         for word, vec_word in context.items():
             self.word_to_embedding[word] = vec_word
 
-    def logistic_regression(self, idx, number_iterations, epsilon):
+    def logistic_regression(self, idx, number_iterations, epsilon, is_new = False):
         word = self.data[idx]
-        pos_context = self.find_pos_context(idx)
+        pos_context = self.find_pos_context(idx, is_new)
         neg_context = self.find_neg_context(idx, pos_context)
         cur_weights = self.word_to_embedding[word]
         for i in range(number_iterations):
@@ -121,13 +130,22 @@ class word2vec:
             self.word_to_embedding[i] = np.random.random(self.embedding_size)
         self.unique_words = np.array(list(self.word_to_embedding.keys()))
     
-    def learn(self):
+    def learn(self, is_new = False):
         self.make_random_embeddings()
-        for i in range(len(self.data)):
+        start_pos = 0
+        if is_new:
+            start_pos = self.old_len
+        for i in range(start_pos, len(self.data)):
             if(i % 1000 == 0):
                 print(f"created embeddings: {i}")
             weights = self.logistic_regression(i, 500, 0.01)
-            self.word_to_embedding[self.data[i]] = weights   
+            self.word_to_embedding[self.data[i]] = weights
+        self.old_len = len(self.data)
+
+    def return_vec(self):
+        returned_vec = []
+        for i in range(len(self.data) - self.add_len, len(self.data)):
+            returned_vec.append(self.word_to_embedding[self.data[i]])
     
     def save_embeddings(self, f_name="embeddings.json"):
         embeddings_list = {word: embedding.tolist() for word, embedding in self.word_to_embedding.items()}
@@ -140,7 +158,7 @@ class word2vec:
         with open("../src_data/"+f_name, "w") as f:
             json.dump(self.word_to_count, f, indent=4)
         f.close()
-        print("Embeddings saved successfully!")
+        print("Word count saved successfully!")
     
     def load_embeddings(self, f_name):
         with open("../src_data/"+f_name) as f:
@@ -148,5 +166,5 @@ class word2vec:
         f.close()
         self.word_to_embedding = {word: np.array(embedding) for word, embedding in embedding_list.items()}
         self.unique_words = np.array(list(self.word_to_embedding.keys()))
-        print("Embeddings loaded successfully!")
+        print("Embeddings loaded in word2vec successfully!")
     
