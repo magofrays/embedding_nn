@@ -1,3 +1,5 @@
+
+
 from simple_nn import SimpleNN
 from process_data import process_data
 from simple_nn import generate_text
