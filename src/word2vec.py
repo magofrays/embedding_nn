@@ -130,7 +130,7 @@ class word2vec:
             self.word_to_embedding[i] = np.random.random(self.embedding_size)
         self.unique_words = np.array(list(self.word_to_embedding.keys()))
     
-    def learn(self, is_new = False):
+    def train(self, is_new = False):
         self.make_random_embeddings()
         start_pos = 0
         if is_new:
@@ -147,21 +147,21 @@ class word2vec:
         for i in range(len(self.data) - self.add_len, len(self.data)):
             returned_vec.append(self.word_to_embedding[self.data[i]])
     
-    def save_embeddings(self, f_name="embeddings.json"):
+    def save_embeddings(self, f_dir="embeddings.json"):
         embeddings_list = {word: embedding.tolist() for word, embedding in self.word_to_embedding.items()}
-        with open("../src_data/"+f_name, "w") as f:
+        with open(f_dir, "w") as f:
             json.dump(embeddings_list, f, indent=4)
         f.close()
         print("Embeddings saved successfully!")
 
-    def save_word_count(self, f_name="word_count.json"):
-        with open("../src_data/"+f_name, "w") as f:
+    def save_word_count(self, f_dir="word_count.json"):
+        with open(f_dir, "w") as f:
             json.dump(self.word_to_count, f, indent=4)
         f.close()
         print("Word count saved successfully!")
     
-    def load_embeddings(self, f_name):
-        with open("../src_data/"+f_name) as f:
+    def load_embeddings(self, f_dir):
+        with open(f_dir) as f:
             embedding_list = json.loads(f.read())
         f.close()
         self.word_to_embedding = {word: np.array(embedding) for word, embedding in embedding_list.items()}

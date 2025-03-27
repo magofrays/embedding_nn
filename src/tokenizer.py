@@ -4,7 +4,7 @@ import json
 import sys
 
 
-class BPETokenizerSimple:
+class BPETokenizer:
     def __init__(self):
         self.vocab = {}
         self.inverse_vocab = {}
@@ -99,24 +99,24 @@ class BPETokenizerSimple:
                 decoded_string += token
         return decoded_string
 
-    def save_vocab_and_merges(self, vocab_path, bpe_merges_path):
+    def save_vocab_and_merges(self, vocab_dir, merges_dir):
         # Save vocabulary
-        with open(vocab_path, "w", encoding="utf-8") as file:
+        with open(vocab_dir, "w", encoding="utf-8") as file:
             json.dump({k: v for k, v in self.vocab.items()}, file, ensure_ascii=False, indent=2)
 
         # Save BPE merges as a list of dictionaries
-        with open(bpe_merges_path, "w", encoding="utf-8") as file:
+        with open(merges_dir, "w", encoding="utf-8") as file:
             merges_list = [{"pair": list(pair), "new_id": new_id}
                            for pair, new_id in self.bpe_merges.items()]
             json.dump(merges_list, file, ensure_ascii=False, indent=2)
 
-    def load_vocab_and_merges(self, vocab_path, bpe_merges_path):
-        with open(vocab_path, "r", encoding="utf-8") as file:
+    def load_vocab_and_merges(self, vocab_dir, merges_dir):
+        with open(vocab_dir, "r", encoding="utf-8") as file:
             loaded_vocab = json.load(file)
             self.vocab = {int(k): v for k, v in loaded_vocab.items()}
             self.inverse_vocab = {v: int(k) for k, v in loaded_vocab.items()}
 
-        with open(bpe_merges_path, "r", encoding="utf-8") as file:
+        with open(merges_dir, "r", encoding="utf-8") as file:
             merges_list = json.load(file)
             for merge in merges_list:
                 pair = tuple(merge['pair'])
