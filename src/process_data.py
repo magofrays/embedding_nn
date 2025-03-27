@@ -49,7 +49,7 @@ def save_tokenized_data():
 
 def load_tokenized_data():
     tokenized_data = open("../../src_data/tokenized_data.txt").read()
-    tokenized_data = list(map(int, tokenized_data.split()))
+    tokenized_data = np.array(list(map(int, tokenized_data.split())))
     return tokenized_data
 
 def encode_text(text):
