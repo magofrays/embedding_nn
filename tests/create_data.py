@@ -1,7 +1,7 @@
 import sys
 import os
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
 from process_data import save_data
 
 print("start")

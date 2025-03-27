@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
 from simple_nn import SimpleNN
 from process_data import process_data
 from process_data import clean_word
