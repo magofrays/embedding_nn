@@ -28,7 +28,7 @@ def predict(model, text, l, d):
     model.load_embeddings(f"../src_data/word2vec_new{d}.json")
     model.load_word_count(f"../src_data/word2vec_new_count{d}.json")
     print(f"l = {l}; d = {d}")
-    gen_data = generate_text(clean_word(text).split(), model, 2)
+    gen_data = generate_text(clean_word(text).split(), model, 10)
     print(" ".join(gen_data))
 
 model1 = SimpleNN()
@@ -37,22 +37,22 @@ model1.add_data(learn_data)
 
 model1.load_model("../src_data/100_nn.keras")
 
-model2 = SimpleNN()
-model2.add_data(learn_data)
+# model2 = SimpleNN()
+# model2.add_data(learn_data)
 # model2.load_embeddings("embeddings_new.json")
 # model2.load_word_count("word_count.json")
-model2.load_model("../src_data/500_nn.keras")
+# model2.load_model("../src_data/500_nn.keras")
 
-model3 = SimpleNN()
-model3.add_data(learn_data)
+# model3 = SimpleNN()
+# model3.add_data(learn_data)
 # model3.load_embeddings("embeddings_new.json")
 # model3.load_word_count("word_count.json")
-model3.load_model("../src_data/1000_nn.keras")
+# model3.load_model("../src_data/1000_nn.keras")
 
 print("ask model:")
 
 text = input()
 
 predict(model1, text, 6, 100)
-predict(model2, text, 6, 500)
-predict(model3, text, 6, 1000)
+# predict(model2, text, 6, 500)
+# predict(model3, text, 6, 1000)

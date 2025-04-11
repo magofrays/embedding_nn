@@ -7,10 +7,8 @@ from word2vec import word2vec
 from process_data import load_data
 
 learning_data = load_data()
-# with open ('../src_data/data.txt', 'w', encoding='utf-8') as f:
-#     f.write(' '.join(learning_data))
 model = word2vec(100, 6, 2)
 model.add_data(learning_data)
-model.save_word_count("../src_data/word_count_1000.json")
+model.save_word_count("../src_data/word_count_100.json")
 model.train()
-model.save_embeddings("../src_data/emb_1000.json")
+model.save_embeddings("../src_data/emb_100.json")
