@@ -10,4 +10,4 @@
 2. tests/token/save_embeddings.py - to create from tokens embeddings
 3. tests/token/save_nn.py - to create nn that predicts words from embeddings
 4. tests/token/load_nn.py - to test model answers and get perplexity
-##### unfortunately this model has only dense layers. So it's accuracy is only 0.05 withou tokens and 0.40 with tokens.
+##### unfortunately this model has only dense layers. So it's accuracy is only 0.05 without tokens and 0.40 with tokens.
