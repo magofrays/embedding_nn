@@ -1,4 +1,4 @@
-# this is simple nlp program based on books of ozon671games3 books and 1984
+# this is simple nlp program based on ozon671games3 books and 1984
 ## this is educational project
 ### there are two ways of using it:
 #### - use without tokenizer:
