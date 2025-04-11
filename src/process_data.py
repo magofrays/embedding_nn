@@ -4,7 +4,7 @@ import os
 from tokenizer import BPETokenizer
 
 def clean_word(word):
-    return re.sub(r'[^\w\s@#.,!?;:"\'\-]', '', word).strip()
+    return re.sub(r'[^a-zа-я@# ]', '', word.lower())
 
 
 def process_data():
@@ -28,7 +28,7 @@ def save_data():
         file.write(" ".join(data))
 
 def load_data():
-    data = np.array(open("../../src_data/data.txt").read().split())
+    data = open("../src_data/data.txt").read().split()
     return data
 
 # it is used in tests/token folder
@@ -48,8 +48,8 @@ def save_tokenized_data():
         file.write(" ".join(tokenized_data))
 
 def load_tokenized_data():
-    tokenized_data = open("../../src_data/tokenized_data.txt").read()
-    tokenized_data = np.array(list(map(int, tokenized_data.split())))
+    tokenized_data = open("../../src_data/token/tokenized_data.txt").read()
+    tokenized_data = list(map(int, tokenized_data.split()))
     return tokenized_data
 
 def encode_text(text):

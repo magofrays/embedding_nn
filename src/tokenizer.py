@@ -9,34 +9,36 @@ class BPETokenizer:
         self.vocab = {}
         self.inverse_vocab = {}
         self.bpe_merges = {}
+        self.token_ids = []
 
-    def train(self, text, vocab_size):
-        processed_text = []
-        for i, char in enumerate(text):
-            if char.isspace() and i != 0:
-                processed_text.append("Ġ")
-            if char != " ":
-                processed_text.append(char)
-        processed_text = "".join(processed_text)
+    def train(self, text, vocab_size, preprocess = True, token_ids = []):
+        if preprocess:
+            processed_text = []
+            for i, char in enumerate(text):
+                if char.isspace() and i != 0:
+                    processed_text.append("Ġ")
+                if char != " ":
+                    processed_text.append(char)
+            processed_text = "".join(processed_text)
 
-        unique_chars = [char for char in sorted(set(processed_text))]
-        unique_chars.append('Ġ')
+            unique_chars = [char for char in sorted(set(processed_text))]
+            unique_chars.append('Ġ')
 
-        self.vocab = {i: char for i, char in enumerate(unique_chars)}
-        self.inverse_vocab = {char: i for i, char in self.vocab.items()}
-
-        token_ids = [self.inverse_vocab[char] for char in processed_text]
-
+            self.vocab = {i: char for i, char in enumerate(unique_chars)}
+            self.inverse_vocab = {char: i for i, char in self.vocab.items()}
+            
+            token_ids = [self.inverse_vocab[char] for char in processed_text]
+        new_merges = {}
         for new_id in range(len(self.vocab), vocab_size):
             print(new_id)
             pair_id = self.find_freq_pair(token_ids)
             token_ids = self.replace_pair(token_ids, pair_id, new_id)
-            self.bpe_merges[pair_id] = new_id
-
-        for (p0, p1), new_id in self.bpe_merges.items():
+            new_merges[pair_id] = new_id
+        for (p0, p1), new_id in new_merges.items():
             merged_token = self.vocab[p0] + self.vocab[p1]
             self.vocab[new_id] = merged_token
             self.inverse_vocab[merged_token] = new_id
+        self.bpe_merges.update(new_merges)
 
     def encode(self, text):
         tokens = []
@@ -100,11 +102,9 @@ class BPETokenizer:
         return decoded_string
 
     def save_vocab_and_merges(self, vocab_dir, merges_dir):
-        # Save vocabulary
         with open(vocab_dir, "w", encoding="utf-8") as file:
             json.dump({k: v for k, v in self.vocab.items()}, file, ensure_ascii=False, indent=2)
 
-        # Save BPE merges as a list of dictionaries
         with open(merges_dir, "w", encoding="utf-8") as file:
             merges_list = [{"pair": list(pair), "new_id": new_id}
                            for pair, new_id in self.bpe_merges.items()]

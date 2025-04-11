@@ -7,20 +7,21 @@ import tensorflow as tf
 tf.get_logger().setLevel('ERROR')
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten
+from random import randint
 
 from process_data import clean_word
 import json
 
 class SimpleNN:
-    def __init__(self, context_len = 6, subsample_size = 5000):
+    def __init__(self, context_len = 6):
         self.nn_model = Sequential()
         self.train_data = ()
-        self.data = np.array([])
-        self.unique_words = np.array([])
-        self.subsample_size = subsample_size
+        self.data = []
+        self.unique_words = []
         self.context_len = context_len
         self.embedding_size = 0
         self.count_words = {}
+        self.word_to_embedding = {}
     
     def index_to_one_hot(self, index, length):
         one_hot = np.zeros(length)
@@ -28,7 +29,7 @@ class SimpleNN:
         return one_hot
     
     def add_data(self, new_data):
-        self.data = np.concatenate((self.data, new_data))
+        self.data.extend(new_data)
     
     def train_data_generator(self):
         def generator():
@@ -36,22 +37,26 @@ class SimpleNN:
                 split = self.data[i:i + self.context_len + 1]
                 X_train = self.convert_input_to_embedding(split[:-1])
                 Y_train = self.index_to_one_hot(
-                    self.unique_words.tolist().index(split[-1]),
+                    self.unique_words.index(split[-1]),
                     len(self.unique_words)
                 )
                 yield (X_train, Y_train)
                 
         return generator
     
-    # def make_train_data(self, start, end):
-    #     splits = []
-    #     for i in range(start, end - self.context_len - 1):
-    #         splits.append(self.data[i : i + self.context_len + 1])
-    #     splits = np.array(splits)
-    #     X_train = np.array([self.convert_input_to_embedding(s[:-1]) for s in splits])
-    #     Y_train = np.array([self.index_to_one_hot(self.unique_words.tolist().index(s[-1]), len(self.unique_words)) for s in splits])
-    #     print(f"Created train data size of: {self.subsample_size}")
-    #     self.train_data = (X_train, Y_train)
+    def validate_data_generator(self):
+        def generator():
+            for t in range(1000):
+                i = randint(0, len(self.data) - self.context_len-1)
+                split = self.data[i:i + self.context_len + 1]
+                X_train = self.convert_input_to_embedding(split[:-1])
+                Y_train = self.index_to_one_hot(
+                    self.unique_words.index(split[-1]),
+                    len(self.unique_words)
+                )
+                yield (X_train, Y_train)
+                
+        return generator
     
     def compile(self):
         self.nn_model.add(Flatten(input_shape=(self.context_len, self.embedding_size)))
@@ -68,45 +73,36 @@ class SimpleNN:
                 tf.TensorSpec(shape=(self.context_len, self.embedding_size), dtype=tf.float32),
                 tf.TensorSpec(shape=(len(self.unique_words),), dtype=tf.float32)
             )
-        ).batch(32).prefetch(tf.data.AUTOTUNE)
+        ).shuffle(1000).batch(32).prefetch(tf.data.AUTOTUNE)
     
+    def create_val_dataset(self):
+        return tf.data.Dataset.from_generator(
+            self.validate_data_generator(),
+            output_signature=(
+                tf.TensorSpec(shape=(self.context_len, self.embedding_size), dtype=tf.float32),
+                tf.TensorSpec(shape=(len(self.unique_words),), dtype=tf.float32)
+            )
+        ).shuffle(5000).batch(32).prefetch(tf.data.AUTOTUNE)
     
-    def train(self, epochs=10, first_subsample_only=False):
-        # Создаем dataset
+    def train(self, epochs=10):
         dataset = self.create_dataset()
+        val_dataset = self.create_val_dataset()
         
-        # Если нужно обучать только на части данных
-        if first_subsample_only:
-            dataset = dataset.take(self.subsample_size // 32)  # 32 - batch size
-            
-        # Вычисляем steps per epoch
-        # steps_per_epoch = len(self.data) // self.subsample_size if not first_subsample_only else None
-        
-        # Запускаем обучение
         self.nn_model.fit(
             dataset,
             epochs=epochs,
-            batch_size=32
+            validation_data=val_dataset,
         )
-    # def train(self, epochs=10, first_subsample_only = False):
-    #     subsample_number = len(self.data)//self.subsample_size
-    #     if first_subsample_only:
-    #         self.make_train_data(0*self.subsample_size, (0+1)*self.subsample_size)
-    #         self.nn_model.fit(self.train_data[0], self.train_data[1], epochs=epochs, batch_size=32)
-    #         return
     
-    #     for i in range(subsample_number):
-    #         print(f"Iteration {i+1} out of {subsample_number}")
-    #         self.make_train_data(i*self.subsample_size, (i+1)*self.subsample_size)
-    #         self.nn_model.fit(self.train_data[0], self.train_data[1], epochs=epochs, batch_size=32)
-    #     print("Training completed!")
-
-    def computing_perplexity(self, words):
+    def computing_perplexity(self, words, token=False):
         add_sum = 0
         for i in range(len(words) - 1, 0, -1):
             val = ''
             for k in range(i):
-                val += words[k] + ' '
+                if token:
+                    val += str(int(words[k]))+".0" + " "
+                else:
+                    val += words[k] + ' '
             val = val[:-1]
             c_up = 1
             if val in self.count_words:
@@ -119,24 +115,34 @@ class SimpleNN:
         perplexity = gmpy2.root(1 / down_val, len(words))
         print(f"Perplexity: {perplexity}")
     
-    def predict(self, context, verbose=0):
-        # cleaned_words = [clean_word(word) for word in str_context]
+    def predict(self, context, verbose=0, token=False):
+        cleaned_words = []
         if(len(context) != self.context_len):
             context = context[:6]
-        context = [self.word_to_embedding[int(w)] for w in context]
-        context = np.array(context).reshape(1, self.context_len, self.embedding_size)
-        word_one_hot = self.nn_model.predict(context, verbose=verbose)
+        if token:
+            cleaned_words = [self.word_to_embedding[int(w)] for w in context]
+        if not token:
+            cleaned_words = [clean_word(word) for word in context]
+            cleaned_words = [self.word_to_embedding[w] for w in context]
+        # print(cleaned_words, type(cleaned_words))
+        other_context = np.array(cleaned_words).reshape(1, self.context_len, self.embedding_size)
+        word_one_hot = self.nn_model.predict(other_context, verbose=verbose)
         predicted_index = np.argmax(word_one_hot, axis=-1)[0]
         predicted_word = self.unique_words[predicted_index]
-        # context.append(predicted_word)
-        self.computing_perplexity(context)
+
+        perplexity_words = context.copy()
+        perplexity_words.append(predicted_word)
+        self.computing_perplexity(perplexity_words, token)
         return predicted_word
 
-    def load_embeddings(self, f_dir):
+    def load_embeddings(self, f_dir, token=False):
         with open(f_dir) as f:
             embedding_list = json.loads(f.read())
-        self.word_to_embedding = {int(float(word)): np.array(embedding) for word, embedding in embedding_list.items()}
-        self.unique_words = np.array(list(self.word_to_embedding.keys()))
+        if token:
+            self.word_to_embedding = {int(float(word)): np.array(embedding) for word, embedding in embedding_list.items()}
+        else:
+            self.word_to_embedding = {word : np.array(embedding) for word, embedding in embedding_list.items()}
+        self.unique_words = list(self.word_to_embedding.keys())
         self.embedding_size = len(self.word_to_embedding[self.unique_words[0]])
         print("Embeddings loaded in NN successfully!")
 
@@ -158,11 +164,13 @@ class SimpleNN:
         print("Model saved successfully!")
         
 
-def generate_text(context, model, size):
-    result = context.copy()
+def generate_text(context, model, size, token=False):
+    result = context.copy()[:6]
+    context = context[:6]
     for i in range(size):
-        predict = model.predict(context)
+        predict = model.predict(context, token=token)
         context.pop(0)
         result.append(predict)
         context.append(predict)
+        # print(len(context))
     return result
